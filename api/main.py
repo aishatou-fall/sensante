@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 import joblib
 import numpy as np
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # --- Schemas Pydantic ---
@@ -17,6 +18,8 @@ class PatientInput(BaseModel):
     toux: bool = Field(...)
     fatigue: bool = Field(...)
     maux_tete: bool = Field(...)
+    frissons: bool = Field(..., description="Présence de frissons")
+    nausee: bool = Field(..., description="Présence de nausée")
     region: str = Field(...)
 
 
@@ -33,7 +36,13 @@ app = FastAPI(
     description="Assistant pré-diagnostic médical pour le Sénégal",
     version="0.2.0"
 )
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Chargement du modèle (une seule fois) ---
 print("Chargement du modele...")
@@ -79,14 +88,16 @@ def predict(patient: PatientInput):
 
     # Features
     features = np.array([[
-        patient.age,
-        sexe_enc,
-        patient.temperature,
-        patient.tension_sys,
-        int(patient.toux),
-        int(patient.fatigue),
-        int(patient.maux_tete),
-        region_enc
+    patient.age,
+    sexe_enc,
+    patient.temperature,
+    patient.tension_sys,
+    int(patient.toux),
+    int(patient.fatigue),
+    int(patient.maux_tete),
+    int(patient.frissons),
+    int(patient.nausee),
+    region_enc
     ]])
 
     # Prediction
@@ -112,3 +123,12 @@ def predict(patient: PatientInput):
         confiance=confiance,
         message=messages.get(diagnostic, "Consultez un médecin.")
     )
+
+@app.get("/model-info")
+def model_info():
+    return {
+        "type": type(model).__name__,
+        "n_estimators": model.n_estimators,
+        "classes": list(model.classes_),
+        "n_features": model.n_features_in_
+    }
