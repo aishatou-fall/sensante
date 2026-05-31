@@ -120,6 +120,7 @@
 
     </div>
   </main>
+  <div id="historique" class="max-w-4xl mx-auto px-4 pb-8"></div>
 
   <!-- Footer -->
   <footer class="text-center text-gray-400 text-sm py-4">
@@ -128,6 +129,7 @@
 
   <script>
     const API_URL = "http://localhost:8000";
+    const historique = [];
 
     async function diagnostiquer() {
       const patient = {
@@ -189,6 +191,8 @@
 
       const c = couleurs[r.diagnostic] || couleurs["sain"];
       const pct = Math.round(r.probabilite * 100);
+      const emojis = { paludisme: "🦟", grippe: "🤧", typhoide: "⚠️", sain: "✅" };
+      const emoji = emojis[r.diagnostic] || "🩺";
       const section = document.getElementById("result-section");
 
       section.innerHTML = `
@@ -196,7 +200,7 @@
           <h2 class="text-xl font-bold text-gray-800 mb-4">Résultat</h2>
           <div class="${c.bg} rounded-lg p-4 mb-4">
             <p class="text-sm text-gray-600">Diagnostic :</p>
-            <p class="text-2xl font-bold ${c.text} uppercase mt-1">${r.diagnostic}</p>
+            <p class="text-2xl font-bold ${c.text} uppercase mt-1">${emoji} ${r.diagnostic}</p>
           </div>
           <div class="mb-4">
             <div class="flex justify-between mb-1">
@@ -215,7 +219,73 @@
             <p class="text-sm text-gray-700">${r.message}</p>
           </div>
         </div>`;
+
+        historique.unshift({ diagnostic: r.diagnostic, probabilite: pct });
+        if (historique.length > 5) historique.pop();
+
+        let rows = historique.map(h => `
+        <tr>
+            <td class="border px-3 py-1">${h.diagnostic}</td>
+            <td class="border px-3 py-1">${h.probabilite}%</td>
+        </tr>`).join("");
+
+        document.getElementById("historique").innerHTML = `
+        <h3 class="font-bold text-gray-700 mt-6 mb-2">Historique des consultations</h3>
+        <table class="w-full text-sm">
+            <tr class="bg-gray-100">
+            <th class="border px-3 py-1 text-left">Diagnostic</th>
+            <th class="border px-3 py-1 text-left">Probabilité</th>
+            </tr>
+            ${rows}
+        </table>`;
+      
+      demanderExplication(r);
     }
+
+    async function demanderExplication(diagnostic_data) {
+      const explainData = {
+          diagnostic: diagnostic_data.diagnostic,
+          probabilite: diagnostic_data.probabilite,
+          age: parseInt(document.getElementById("age").value),
+          sexe: document.getElementById("sexe").value,
+          temperature: parseFloat(document.getElementById("temperature").value),
+          region: document.getElementById("region").value
+      };
+
+      const section = document.getElementById("result-section");
+      const explDiv = document.createElement("div");
+      explDiv.id = "explication-zone";
+      explDiv.innerHTML = `
+          <div class="mt-4 bg-purple-50 rounded-lg p-4 border border-purple-200">
+              <p class="text-sm text-purple-600 font-medium mb-2">Explication (Llama 3)</p>
+              <p class="text-gray-500 text-sm animate-pulse">Génération en cours...</p>
+          </div>`;
+      section.querySelector(".bg-white").appendChild(explDiv);
+
+      try {
+          const response = await fetch(API_URL + "/explain", {
+              method: "POST",
+              headers: {"Content-Type": "application/json"},
+              body: JSON.stringify(explainData)
+          });
+          if (response.ok) {
+              const result = await response.json();
+              explDiv.innerHTML = `
+                  <div class="mt-4 bg-purple-50 rounded-lg p-4 border border-purple-200">
+                      <p class="text-sm text-purple-600 font-medium mb-2">Explication (Llama 3)</p>
+                      <p class="text-gray-700 text-sm leading-relaxed">${result.explication}</p>
+                  </div>`;
+          }
+      } catch (error) {
+          explDiv.innerHTML = `
+              <div class="mt-4 bg-gray-50 rounded-lg p-3">
+                  <p class="text-gray-400 text-sm">Explication non disponible.</p>
+              </div>`;
+      }
+    }
+
+
+
 
     function afficherErreur(msg) {
       const section = document.getElementById("result-section");
