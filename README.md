@@ -1,20 +1,10 @@
-# SenSante
-Assistant de pre-diagnostic medical pour le Senegal.
+---
+title: Sensante
+emoji: 📚
+colorFrom: purple
+colorTo: green
+sdk: docker
+pinned: false
+---
 
-## Description
-SenSante utilise le Machine Learning pour aider au
-pre-diagnostic des maladies courantes (paludisme,
-grippe, typhoide) a partir des symptomes du patient.
-
-## Structure du projet
-- `data/` : Donnees patients (CSV)
-- `models/` : Modele ML serialise
-- `api/` : API FastAPI
-- `frontend/` : Interface web
-- `notebooks/` : Scripts d'exploration
-
-## Auteur
-Aïshatou Nguyen FALL - DUT2 Informatique - ESP/UCAD
-
-## Cours
-Integration de Modeles IA - Dr. El Hadji Bassirou TOURE
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
