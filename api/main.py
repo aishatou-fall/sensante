@@ -207,3 +207,16 @@ def explain(data: ExplainInput):
     return ExplainOutput(explication=explication)
 
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Servir le frontend comme fichier statique
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "frontend")), name="static")
+
+@app.get("/")
+def serve_frontend():
+    """Servir la page d'accueil."""
+    return FileResponse(os.path.join(BASE_DIR, "frontend/index.html"))
